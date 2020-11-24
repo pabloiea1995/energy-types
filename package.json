@@ -1,0 +1,23 @@
+{
+  "name": "energy-types",
+  "version": "0.0.1",
+  "description": "Energy types and classes",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pabloiea1995/energy-types.git"
+  },
+  "author": "Pablo Sanchez",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "build": "tsc",
+    "prepare" : "yarn build",
+    "version" : "npm run format && git add -A src",
+    "postversion" : "git push && git push --tags"
+  },
+  "devDependencies": {
+    "typescript": "^4.1.2"
+  }
+}
