@@ -4,6 +4,12 @@
 export class EnergyPrices {
   constructor() {
     this.units = "€/kWh";
+    this.p1 = undefined;
+    this.p2 = undefined;
+    this.p3 = undefined;
+    this.p4 = undefined;
+    this.p5 = undefined;
+    this.p6 = undefined;
   }
   p1?: number;
   p2?: number;

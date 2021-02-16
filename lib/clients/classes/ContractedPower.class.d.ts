@@ -1,4 +1,5 @@
 export declare class ContractedPower {
+    constructor();
     p1?: number;
     p2?: number;
     p3?: number;

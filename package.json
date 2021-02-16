@@ -1,6 +1,6 @@
 {
   "name": "energy-types",
-  "version": "0.0.47",
+  "version": "0.0.94",
   "description": "Energy types and classes",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -30,12 +30,19 @@
     "typescript": "^4.1.2"
   },
   "dependencies": {
+    "@nestjs-query/query-typeorm": "^0.21.2",
     "@nestjs/common": "^7.5.5",
     "@nestjs/mongoose": "^7.1.2",
+    "@nestjs/typeorm": "^7.1.5",
     "@types/geojson": "^7946.0.7",
     "@types/mongoose": "^5.10.1",
+    "@types/uuid": "^8.3.0",
+    "class-transformer": "^0.3.2",
     "mongoose": "^5.10.15",
+    "mysql": "^2.18.1",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^6.6.3"
+    "rxjs": "^6.6.3",
+    "typeorm": "^0.2.30",
+    "uuid": "^8.3.2"
   }
 }

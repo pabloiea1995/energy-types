@@ -1,3 +1,4 @@
+import { AbstractByPeriodValuesDto } from "../dtos/AbstractByPeriodValuesDto";
 interface GraphSerie {
     name: string;
     x: any[];
@@ -6,10 +7,11 @@ interface GraphSerie {
     yDailyAverage: any[];
 }
 export declare class PowerCurve {
-    constructor(daysList: DayCurve[], ignore0: boolean, identifier: string);
+    constructor(daysList: DayCurve[], ignore0: boolean, identifier: string, parseDate?: boolean);
     days: DayCurve[];
     ignore0: boolean;
     identifier: string;
+    parseDate?: boolean;
     /**
      * Converts curve to a data object ready to be ploted by a charting library like react-plotly.js
      */
@@ -34,10 +36,25 @@ export declare class PowerCurve {
      * Classifies daily values on its corresponding year
      */
     classifyByYears(): ConsumptionCurve[];
+    aggregatePowerCurve(curveToAggregate: PowerCurve): PowerCurve;
     /**
-     * Calculates statistics of the consumption curva by year
+     * Calculates statistics of the consumption curve by year
      */
-    calculateStatistics(periodDistribution: any): PowerCurveStatistics;
+    calculateStatistics(periodDistribution?: DayCurve[]): PowerCurveStatistics;
+    /**
+     * Applyes a multiplier to every consumption value
+     * @param multiplier
+     */
+    applyMultiplier(multiplier: number): PowerCurve;
+    /**
+     * Returns a new power curve with only positive values
+     */
+    filterNegativeValues(): PowerCurve;
+    /**
+     * Returns a new power curve with only negative values
+     */
+    filterPositiveValues(): PowerCurve;
+    aggregateByPeriod(periodDistribution: DayCurve[]): AbstractByPeriodValuesDto<number>;
 }
 export interface ConsumptionCurve {
     days?: DayCurve[];
