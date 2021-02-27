@@ -1,6 +1,6 @@
 {
   "name": "energy-types",
-  "version": "0.0.94",
+  "version": "0.0.103",
   "description": "Energy types and classes",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -35,7 +35,6 @@
     "@nestjs/mongoose": "^7.1.2",
     "@nestjs/typeorm": "^7.1.5",
     "@types/geojson": "^7946.0.7",
-    "@types/mongoose": "^5.10.1",
     "@types/uuid": "^8.3.0",
     "class-transformer": "^0.3.2",
     "mongoose": "^5.10.15",

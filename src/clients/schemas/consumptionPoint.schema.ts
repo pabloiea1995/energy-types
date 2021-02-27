@@ -8,20 +8,24 @@ export type ConsumptionPointDocument = ConsumptionPoint & Document;
 
 @Schema()
 export class ConsumptionPoint {
-
-  constructor(identifier:string, cups:string, isFrontierPoint: boolean, contractInfo: ContractInfo[], consumption: Consumption, location: Point | Polygon){
-
-      this.identifier = identifier;
-      this.cups = cups;
-      this.isFrontierPoint = isFrontierPoint;
-      this.contractInfo = contractInfo
-      this.consumption = consumption
-      this.location = location
+  constructor(
+    identifier: string,
+    cups: string,
+    isFrontierPoint: boolean,
+    contractInfo: ContractInfo[],
+    consumption: Consumption,
+    location: Point | Polygon
+  ) {
+    this.identifier = identifier;
+    this.cups = cups;
+    this.isFrontierPoint = isFrontierPoint;
+    this.contractInfo = contractInfo;
+    this.consumption = consumption;
+    this.location = location;
   }
 
-  _id?: string
+  _id?: string;
 
-  
   @Prop()
   identifier: string;
 
@@ -42,11 +46,9 @@ export class ConsumptionPoint {
 
   @Prop({
     type: String, // Don't do `{ location: { type: String } }`
-    enum: ['Point', "Polygon"], // 'location.type' must be 'Point'
-    
+    enum: ["Point", "Polygon"], // 'location.type' must be 'Point'
   })
-  
-  location?: Point | Polygon
+  location?: Point | Polygon;
 }
 
 export const ConsumptionPointSchema = SchemaFactory.createForClass(

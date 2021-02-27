@@ -720,36 +720,51 @@ export class PowerCurve {
     periodDistribution: DayCurve[]
   ): AbstractByPeriodValuesDto<number> {
     let periodAggregation: AbstractByPeriodValuesDto<number> = {};
+    try {
+      if (periodDistribution[0].date) {
+        let periodDistributionDay: DayCurve;
+        //iterate throw power curve days
+        this.days.forEach((day) => {
+          //distintion between "T" format date and normal date
+          if (periodDistribution[0].date.split("T").length > 0) {
+            //get the period distribution day
+            periodDistributionDay = periodDistribution.filter(
+              (periodDay) => periodDay.date.split("T")[0] === day.date
+            )[0];
+          } else {
+            //get the period distribution day
+            periodDistributionDay = periodDistribution.filter(
+              (periodDay) => periodDay.date === day.date
+            )[0];
+          }
 
-    //iterate throw power curve days
-    this.days.forEach((day) => {
-      //get the period distribution day
-      let periodDistributionDay = periodDistribution.filter(
-        (periodDay) => periodDay.date.split("T")[0] === day.date
-      )[0];
+          if (
+            periodDistributionDay &&
+            day.valuesList &&
+            periodDistributionDay.valuesList
+          ) {
+            Object.keys(day.valuesList).forEach((hour) => {
+              let currentValue = day.valuesList![hour];
 
-      if (
-        periodDistributionDay &&
-        day.valuesList &&
-        periodDistributionDay.valuesList
-      ) {
-        Object.keys(day.valuesList).forEach((hour) => {
-          let currentValue = day.valuesList![hour];
+              let currentPeriod = ("p" +
+                periodDistributionDay.valuesList![
+                  hour
+                ]) as keyof AbstractByPeriodValuesDto<number>;
 
-          let currentPeriod = ("p" +
-            periodDistributionDay.valuesList![
-              hour
-            ]) as keyof AbstractByPeriodValuesDto<number>;
-
-          if (currentPeriod) {
-            if (periodAggregation[currentPeriod] === undefined) {
-              periodAggregation[currentPeriod] = 0;
-            }
-            periodAggregation[currentPeriod]! += currentValue;
+              if (currentPeriod) {
+                if (periodAggregation[currentPeriod] === undefined) {
+                  periodAggregation[currentPeriod] = 0;
+                }
+                periodAggregation[currentPeriod]! += currentValue;
+              }
+            });
           }
         });
       }
-    });
+    } catch (error) {
+      console.error(error);
+      return periodAggregation;
+    }
     return periodAggregation;
   }
 }
