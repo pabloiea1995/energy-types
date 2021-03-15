@@ -1,6 +1,6 @@
 {
   "name": "energy-types",
-  "version": "0.0.103",
+  "version": "0.0.111",
   "description": "Energy types and classes",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
