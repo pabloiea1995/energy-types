@@ -80,7 +80,21 @@ export class PowerCurve {
           if (currentDay.valuesList[i.toString()] === 0 || i === 25) {
           } else {
             y.push(currentDay.valuesList[i]);
-            x.push(`H${i} ${currentDay.date}`);
+            if (this.parseDate) {
+              let hour = i;
+              let [year, month, day] = currentDay.date.split("-");
+              x.push(
+                new Date(
+                  parseInt(year),
+                  parseInt(month) - 1,
+                  parseInt(day),
+                  i - 1
+                )
+              );
+              //x.push(`H${i} ${currentDia.fecha}`)
+            } else {
+              x.push(`H${i} ${currentDay.date}`);
+            }
             if (currentDay.valuesList[i]) {
               let yS = currentDay.valuesList[i].toString();
               dailyAccumulate += parseFloat(yS);
