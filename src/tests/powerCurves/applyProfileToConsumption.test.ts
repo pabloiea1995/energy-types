@@ -1,6 +1,10 @@
 import { expect } from "chai";
-import { applyProfileToConsumption } from "../../energy/calculations/applyProfileToConsumption";
+import {
+  applyProfileToConsumption,
+  ConsumptionIntroductionModes,
+} from "../../energy/calculations/applyProfileToConsumption";
 import { PowerCurve } from "../../energy/classes/powerCurve.class";
+import { mockedPeriodDistributionSolar } from "./mockedPeriodDistributionSolar";
 import { profile } from "./mockedProfile";
 
 describe("Applying profile to consumption distribution", () => {
@@ -8,7 +12,7 @@ describe("Applying profile to consumption distribution", () => {
   // let years = Object.keys(mockedPowerCurve.classifyByYears())
   it("calculates method totalConsumption with no erros", () => {
     const result = applyProfileToConsumption(
-      "totalConsumption",
+      ConsumptionIntroductionModes.TOTAL_CONSUMPTION,
       profile.profile!,
       1000
     );
@@ -20,7 +24,7 @@ describe("Applying profile to consumption distribution", () => {
   });
   it("calculates method monthConsumption with no erros", () => {
     const result = applyProfileToConsumption(
-      "monthConsumption",
+      ConsumptionIntroductionModes.MONTH_CONSUMPTION,
       profile.profile!,
       {
         2020: {
@@ -37,5 +41,23 @@ describe("Applying profile to consumption distribution", () => {
     expect(result?.days[0]).not.to.be.equal(null);
     expect(result?.days[0].valuesList!["1"]).not.to.be.equal(null);
     expect(typeof result?.days[0].valuesList!["1"]).to.be.equal("number");
+  });
+  it("calculates method consumptionByPeriod with no erros", () => {
+    const result = applyProfileToConsumption(
+      ConsumptionIntroductionModes.CONSUMPTION_BY_PERIOD,
+      profile.profile!,
+      {
+        p1: 1000,
+        p2: 1000,
+        p3: 1000,
+      },
+      mockedPeriodDistributionSolar
+    );
+    //console.log(result?.days[0]);
+    expect(result).not.to.be.equal(null);
+    expect(result?.days[0]).not.to.be.equal(null);
+    expect(result?.days[0].valuesList!["1"]).not.to.be.equal(null);
+    expect(typeof result?.days[0].valuesList!["1"]).to.be.equal("number");
+    expect(Math.round(result?.getTotalAcumulate() || 0)).to.be.equal(3000);
   });
 });

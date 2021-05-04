@@ -1,28 +1,45 @@
 import { DayCurve } from "..";
 import { PowerCurve } from "../classes/powerCurve.class";
+import { AbstractByPeriodValuesDto } from "../dtos/AbstractByPeriodValuesDto";
 
-export type ConsumptionIntroductionModes =
-  | "totalConsumption"
-  | "monthConsumption";
+export enum ConsumptionIntroductionModes {
+  TOTAL_CONSUMPTION = "totalConsumption",
+  MONTH_CONSUMPTION = "monthConsumption",
+  CONSUMPTION_BY_PERIOD = "consumptionByPeriod",
+}
+
+type ConsumptionIntroductionModesDict = {
+  [key in ConsumptionIntroductionModes]: any;
+};
+interface IntroductionModeConsumptionShapeI
+  extends ConsumptionIntroductionModesDict {
+  totalConsumption: number;
+  monthConsumption: Record<number, Record<number, number>>;
+  consumptionByPeriod: Record<`p${number}`, number>;
+}
 /**
  * Function to generate a power curve from a profile and consumption information
- * * @param {*} metodo
- * @param {*} perfilado
- * @param {*} consumos
+ * * @param {*} method
+ * @param {*} profile
+ * @param {*} consumption
  */
-export const applyProfileToConsumption = (
-  method: ConsumptionIntroductionModes,
+export function applyProfileToConsumption<
+  T extends ConsumptionIntroductionModes
+>(
+  method: T,
   profile: DayCurve[],
-  consumption: number | Record<number, Record<number, number>>
-) => {
+  consumption: IntroductionModeConsumptionShapeI[T],
+  periodsCurve?: DayCurve[]
+  //consumption: number | Record<number, Record<number, number>> | Record<`p${number}`, number>
+) {
   //creating profile curve
   const profileCurve = new PowerCurve(profile, false, "profile", true);
 
   //initializing result curve
   const resultCurve = new PowerCurve([], false, "consumption", true);
 
-  switch (method) {
-    case "totalConsumption":
+  switch (method as ConsumptionIntroductionModes) {
+    case ConsumptionIntroductionModes.TOTAL_CONSUMPTION:
       //Primero, se normalizan los valores horarios del perfilado dividiend cada uno por el acumulado de todos los valores horarios.
       //ya que la suma de los valores de perfilado en el periodo considereado debe ser igual a 1
       const accumulated = profileCurve.getTotalAcumulate();
@@ -50,7 +67,7 @@ export const applyProfileToConsumption = (
 
       return resultCurve;
 
-    case "monthConsumption":
+    case ConsumptionIntroductionModes.MONTH_CONSUMPTION:
       if (typeof consumption == "object") {
         const yearList = Object.keys(consumption).sort(
           (a, b) => parseInt(a) - parseInt(b)
@@ -66,7 +83,7 @@ export const applyProfileToConsumption = (
             yearMonthProfilesDic[parseInt(year)] = {};
           }
           //iteramos por cada mes del año del objeto de valores de consumo
-          Object.keys(consumption[parseInt(year)]).forEach((month) => {
+          Object.keys((consumption as any)[parseInt(year)]).forEach((month) => {
             if (!yearMonthProfilesDic[parseInt(year)][parseInt(month)]) {
               yearMonthProfilesDic[parseInt(year)][parseInt(month)] = [];
             }
@@ -118,7 +135,9 @@ export const applyProfileToConsumption = (
           Object.keys(day.valuesList!).forEach((hour) => {
             const valorHorarioPerfilado = day.valuesList![hour];
 
-            const consumoMes = consumption[parseInt(year)][parseInt(month)];
+            const consumoMes = (consumption as any)[parseInt(year)][
+              parseInt(month)
+            ];
 
             dailyValueProfileConsumption.valuesList![hour] =
               (consumoMes * valorHorarioPerfilado) /
@@ -131,9 +150,62 @@ export const applyProfileToConsumption = (
         return resultCurve;
       }
 
+    case ConsumptionIntroductionModes.CONSUMPTION_BY_PERIOD:
+      console.log("Evaluating consumption by period profile");
+      if (typeof consumption == "object" && periodsCurve?.length) {
+        //first, aggregate the profile by period
+        const profileCurve = new PowerCurve(profile, false, "profile", true);
+        const profileByPeriod = profileCurve.aggregateByPeriod(periodsCurve);
+
+        //second iterate through the profile curve calculating each consumption hour value
+        //as the product of itds period consumption value and the profile hour value divided by the aggregatted value of that period
+        profileCurve.days.forEach((day) => {
+          const resultProfileDay: DayCurve = { ...day, valuesList: {} };
+          const [year, month, day_] = day.date.split("-");
+          if (day.valuesList) {
+            //get the period of the day
+            const dayPeriod = periodsCurve.find((day1) => {
+              const [year1, month1, day_1] = day1.date.split("T")[0].split("-");
+              console.log(month, day_, month1, day_1);
+              return month === month1 && day_ === day_1;
+            });
+            if (!dayPeriod) {
+              return;
+            }
+            Object.keys(day.valuesList).map((hour) => {
+              if (dayPeriod?.valuesList) {
+                const hourPeriod = dayPeriod.valuesList[hour];
+                if (hourPeriod) {
+                  let hourCalculatedConsumption = 0;
+                  if (
+                    (profileByPeriod as any)[`p${hourPeriod}`] !== undefined
+                  ) {
+                    hourCalculatedConsumption =
+                      (day.valuesList![hour] /
+                        (profileByPeriod as any)[`p${hourPeriod}`]) *
+                      (consumption as any)[`p${hourPeriod}`];
+                  }
+                  resultProfileDay.valuesList![
+                    hour
+                  ] = hourCalculatedConsumption;
+                }
+              } else {
+                // console.log(
+                //   `no se ha encontrado periodo para el dia ${day.date}`
+                // );
+              }
+            });
+          }
+          resultCurve.days.push(resultProfileDay);
+        });
+        console.log(resultCurve.getTotalAcumulate());
+        console.log(resultCurve.aggregateByPeriod(periodsCurve));
+        return resultCurve;
+      }
+
     default:
       console.warn(
         `No se reconoce el metodo de calculo introducido = ${method}`
       );
   }
-};
+}

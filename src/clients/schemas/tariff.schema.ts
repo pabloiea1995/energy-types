@@ -22,7 +22,7 @@ export class Tariff {
   @Prop()
   contractedPower: ContractedPower;
   @Prop()
-  utilityType:
+  utilityType: "gas" | "electricity";
 }
 
 export const CommercialSchema = SchemaFactory.createForClass(Tariff);
