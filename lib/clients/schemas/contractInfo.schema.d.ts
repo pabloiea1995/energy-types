@@ -8,12 +8,23 @@ export declare class ContractInfo {
     constructor(energyMarketer: EnergyMarketer, type: string, tariffType: string, energyPrices: EnergyPrices, powerPrices: PowerPrices, contractedPower: ContractedPower, startDate: string, endDate: string);
     _id?: string;
     energyMarketer?: EnergyMarketer;
+    commercial?: EnergyMarketer;
     type: string;
+    utilityType?: "gas" | "electricity";
     tariffType: string;
     energyPrices: EnergyPrices;
     powerPrices: PowerPrices;
     contractedPower: ContractedPower;
-    startDate: string;
-    endDate: string;
+    startDate?: string;
+    endDate?: string;
+    signingDate?: string;
+    lastStateChangeDate?: string;
+    state?: string;
+    contractNumber?: string;
+    fee?: string;
+    electricityService?: string;
+    gasService?: string;
+    anualConsumption?: string;
+    anualConsumptionUnit?: string;
 }
 export declare const ContractInfoSchema: import("mongoose").Schema<any, import("mongoose").Model<any>>;

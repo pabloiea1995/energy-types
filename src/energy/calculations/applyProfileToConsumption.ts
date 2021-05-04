@@ -166,7 +166,6 @@ export function applyProfileToConsumption<
             //get the period of the day
             const dayPeriod = periodsCurve.find((day1) => {
               const [year1, month1, day_1] = day1.date.split("T")[0].split("-");
-              console.log(month, day_, month1, day_1);
               return month === month1 && day_ === day_1;
             });
             if (!dayPeriod) {
@@ -198,8 +197,7 @@ export function applyProfileToConsumption<
           }
           resultCurve.days.push(resultProfileDay);
         });
-        console.log(resultCurve.getTotalAcumulate());
-        console.log(resultCurve.aggregateByPeriod(periodsCurve));
+
         return resultCurve;
       }
 
