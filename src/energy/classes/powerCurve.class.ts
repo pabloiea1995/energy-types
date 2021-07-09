@@ -77,7 +77,7 @@ export class PowerCurve {
           }
         } else {
           //si no se ignoran los 0, solo se ignora el 0 en la hora 25
-          if (currentDay.valuesList[i.toString()] === 0 || i === 25) {
+          if (currentDay.valuesList[i.toString()] === 0 && i === 25) {
           } else {
             y.push(currentDay.valuesList[i]);
             if (this.parseDate) {
@@ -142,10 +142,9 @@ export class PowerCurve {
    */
   filterByDates(startDate?: Date, endDate?: Date): DayCurve[] {
     if (startDate && endDate) {
-      return this.days.filter(
-        (day) =>
-          new Date(day.date) >= startDate && new Date(day.date) <= endDate
-      );
+      return this.days.filter((day) => {
+        return new Date(day.date) >= startDate && new Date(day.date) <= endDate;
+      });
     }
     if (startDate) {
       return this.days.filter((day) => new Date(day.date) >= startDate);
@@ -214,9 +213,8 @@ export class PowerCurve {
 
     resultCurve = curve.map((day) => {
       let resultDay: DayCurve = { date: day.date };
-      let aggregatedValuesList: Record<string, number> | undefined = JSON.parse(
-        JSON.stringify(day.valuesList)
-      );
+      let aggregatedValuesList: Record<string, number> =
+        JSON.parse(JSON.stringify(day.valuesList)) || {};
       if (aggregatedValuesList && day.valuesList) {
         Object.keys(day.valuesList).forEach((hour) => {
           if (hour) {
@@ -372,9 +370,8 @@ export class PowerCurve {
                   max[year].weekDay = dayOfWeekIndex;
                   if (periodDistribution) {
                     if (dayPeriodDistribution) {
-                      max[year].period = dayPeriodDistribution.valuesList![
-                        hour
-                      ];
+                      max[year].period =
+                        dayPeriodDistribution.valuesList![hour];
                     }
                   }
                 }
@@ -398,9 +395,8 @@ export class PowerCurve {
                   min[year].weekDay = dayOfWeekIndex;
                   if (periodDistribution) {
                     if (dayPeriodDistribution) {
-                      min[year].period = dayPeriodDistribution.valuesList![
-                        hour
-                      ];
+                      min[year].period =
+                        dayPeriodDistribution.valuesList![hour];
                     }
                   }
                 }
@@ -422,9 +418,8 @@ export class PowerCurve {
                   acumulado: 0,
                   cuenta: 0,
                 };
-                hourlyAverageConsumption[year][
-                  hour
-                ].acumulado += consumoHorario;
+                hourlyAverageConsumption[year][hour].acumulado +=
+                  consumoHorario;
                 hourlyAverageConsumption[year][hour].cuenta += 1;
               } else {
                 if (!hourlyAverageConsumption[year][hour]) {
@@ -433,9 +428,8 @@ export class PowerCurve {
                     cuenta: 0,
                   };
                 }
-                hourlyAverageConsumption[year][
-                  hour
-                ].acumulado += consumoHorario;
+                hourlyAverageConsumption[year][hour].acumulado +=
+                  consumoHorario;
                 hourlyAverageConsumption[year][hour].cuenta += 1;
               }
 
@@ -496,9 +490,8 @@ export class PowerCurve {
               acumulado: 0,
               cuenta: 0,
             };
-            weeklyAverageConsumption[year][
-              dayOfWeekIndex
-            ].acumulado += dailyConsumption;
+            weeklyAverageConsumption[year][dayOfWeekIndex].acumulado +=
+              dailyConsumption;
             weeklyAverageConsumption[year][dayOfWeekIndex].cuenta += 1;
           } else {
             if (!weeklyAverageConsumption[year][dayOfWeekIndex]) {
@@ -507,9 +500,8 @@ export class PowerCurve {
                 cuenta: 0,
               };
             }
-            weeklyAverageConsumption[year][
-              dayOfWeekIndex
-            ].acumulado += dailyConsumption;
+            weeklyAverageConsumption[year][dayOfWeekIndex].acumulado +=
+              dailyConsumption;
             weeklyAverageConsumption[year][dayOfWeekIndex].cuenta += 1;
           }
         }
@@ -644,9 +636,8 @@ export class PowerCurve {
 
     resultCurve = curve.map((day) => {
       let resultDay: DayCurve = { date: day.date };
-      let aggregatedValuesList: Record<string, number> | undefined = JSON.parse(
-        JSON.stringify(day.valuesList)
-      );
+      let aggregatedValuesList: Record<string, number> =
+        JSON.parse(JSON.stringify(day.valuesList)) || {};
       if (aggregatedValuesList && day.valuesList) {
         Object.keys(day.valuesList).forEach((hour) => {
           if (hour) {
@@ -674,9 +665,8 @@ export class PowerCurve {
 
     resultCurve = curve.map((day) => {
       let resultDay: DayCurve = { date: day.date };
-      let aggregatedValuesList: Record<string, number> | undefined = JSON.parse(
-        JSON.stringify(day.valuesList)
-      );
+      let aggregatedValuesList: Record<string, number> =
+        JSON.parse(JSON.stringify(day.valuesList)) || {};
       if (aggregatedValuesList && day.valuesList) {
         Object.keys(day.valuesList).forEach((hour) => {
           if (hour) {
@@ -706,9 +696,8 @@ export class PowerCurve {
 
     resultCurve = curve.map((day) => {
       let resultDay: DayCurve = { date: day.date };
-      let aggregatedValuesList: Record<string, number> | undefined = JSON.parse(
-        JSON.stringify(day.valuesList)
-      );
+      let aggregatedValuesList: Record<string, number> =
+        JSON.parse(JSON.stringify(day.valuesList)) || {};
       if (aggregatedValuesList && day.valuesList) {
         Object.keys(day.valuesList).forEach((hour) => {
           if (hour) {
@@ -780,6 +769,152 @@ export class PowerCurve {
       return periodAggregation;
     }
     return periodAggregation;
+  }
+
+  /**
+   * Returns a new "rotated" power curve: This starts on introduced date and last day is the previous to that one
+   * @param startingDate
+   * @returns
+   */
+  rotateCurve(startingDate: {
+    day: string;
+    month: string;
+  }): PowerCurve | undefined {
+    const numDays = this.days.length;
+
+    const rotatedDays = [];
+    let startingDateIndex;
+    if (numDays) {
+      //find starting date day object
+      const startingDayObject = this.days.find(
+        (day: DayCurve, index: number) => {
+          const [_, month, day_] = day.date.split("-");
+
+          if (startingDate.day === day_ && startingDate.month === month) {
+            startingDateIndex = index;
+            return true;
+          }
+        }
+      );
+      if (startingDayObject && startingDateIndex !== undefined) {
+        rotatedDays.push(startingDayObject);
+        //once the starting date has been found and set at the start of the days array, iterate through the rest of the days from
+        //that index, pushing the intemas and filling the arrays
+        //first to the right from the startingDateIndex
+        for (
+          let rightIndex = startingDateIndex + 1;
+          rightIndex < numDays;
+          rightIndex++
+        ) {
+          rotatedDays.push(this.days[rightIndex]);
+        }
+        for (let leftIndex = 0; leftIndex < startingDateIndex; leftIndex++) {
+          rotatedDays.push(this.days[leftIndex]);
+        }
+        return new PowerCurve(
+          rotatedDays,
+          this.ignore0,
+          "rotated curve-" + this.identifier,
+          this.parseDate
+        );
+      }
+    }
+  }
+
+  /**
+   * Returns a new power curve with dates aligned with referenced one
+   * @param reference
+   * @returns
+   */
+  alignPowerCurveDates(reference: PowerCurve): PowerCurve {
+    const alignedPowerCurve = new PowerCurve(
+      this.days,
+      this.ignore0,
+      this.identifier,
+      this.parseDate
+    );
+
+    const referenceDays = reference.days;
+    //  const toAdaptDays = curveToAdapt.days;
+
+    for (let referenceDay of referenceDays) {
+      const referenceDate = referenceDay.date;
+      const [r_year, r_month, r_day] = referenceDate.split("-");
+
+      alignedPowerCurve.days.find((d) => {
+        const [year, month, day] = d.date.split("-");
+        if (month === r_month && day === r_day) {
+          d.date = `${r_year}-${month}-${day}`;
+        }
+      });
+    }
+    return alignedPowerCurve;
+  }
+
+  /**
+   * Returns an object with the power curve classified by years and month. Each month key contains a powerCurve with
+   * the days in that month
+   */
+  classifyByYearsAndMonths(): Record<number, Record<number, PowerCurve>> {
+    const result: Record<number, Record<number, PowerCurve>> = {};
+
+    const classifiedByYears = this.classifyByYears();
+
+    for (let currentYearCurveDays of classifiedByYears) {
+      if (currentYearCurveDays.year && currentYearCurveDays.days) {
+        result[currentYearCurveDays.year] = {};
+        //iterate through every month from start date to end date of this year to get the curveDays in that month
+        const [startDate, endDate] = new PowerCurve(
+          //get the start date and end date of the current year curve, sorted by dates
+          new PowerCurve(
+            currentYearCurveDays.days,
+            false,
+            "",
+            true
+          ).sortByDate(),
+          false,
+          "",
+          true
+        ).getTotalPeriod();
+        //get the month of start date and end date
+        const startDateMonth = startDate.getMonth();
+        const endDateMonth = endDate.getMonth();
+
+        //iterate from start date month and end date month, filtering by dates
+        for (let month = startDateMonth; month <= endDateMonth; month++) {
+          //get the first and last dates of the month
+          const firstDateOfMonth = new Date(
+            currentYearCurveDays.year,
+            month,
+            1,
+            12
+          );
+          const lastDateOfMonth = new Date(
+            currentYearCurveDays.year,
+            month + 1,
+            0,
+            12
+          );
+          //filter by those dates and asign it to the month index
+          result[currentYearCurveDays.year][month + 1] = new PowerCurve(
+            new PowerCurve(
+              currentYearCurveDays.days,
+              false,
+              "",
+              true
+            ).filterByDates(
+              new Date(firstDateOfMonth.toISOString().split("T")[0]),
+              new Date(lastDateOfMonth.toISOString().split("T")[0])
+            ),
+            false,
+            "",
+            true
+          );
+        }
+      }
+    }
+
+    return result;
   }
 }
 

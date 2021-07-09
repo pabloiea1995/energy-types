@@ -22,6 +22,9 @@ export class SolarStudy {
     this.results = new SolarStudyResults();
     this.panelOrientation = undefined;
     this.panelInclination = undefined;
+    this.peakPowerOptimizationMethod = {
+      maxNumberOfOverproductionMonths: 3,
+    };
   }
   id?: string;
 
@@ -42,4 +45,10 @@ export class SolarStudy {
   consumption?: PowerCurve;
   results?: SolarStudyResults;
   peakPowerCost?: number;
+  //defines peak power optimization method and consytrains, only one can be defined at the same time, if both are,
+  //first method defined will be used
+  peakPowerOptimizationMethod?: {
+    maxExcessesPercentage?: number;
+    maxNumberOfOverproductionMonths?: number;
+  };
 }

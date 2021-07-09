@@ -55,6 +55,26 @@ export declare class PowerCurve {
      */
     filterPositiveValues(): PowerCurve;
     aggregateByPeriod(periodDistribution: DayCurve[]): AbstractByPeriodValuesDto<number>;
+    /**
+     * Returns a new "rotated" power curve: This starts on introduced date and last day is the previous to that one
+     * @param startingDate
+     * @returns
+     */
+    rotateCurve(startingDate: {
+        day: string;
+        month: string;
+    }): PowerCurve | undefined;
+    /**
+     * Returns a new power curve with dates aligned with referenced one
+     * @param reference
+     * @returns
+     */
+    alignPowerCurveDates(reference: PowerCurve): PowerCurve;
+    /**
+     * Returns an object with the power curve classified by years and month. Each month key contains a powerCurve with
+     * the days in that month
+     */
+    classifyByYearsAndMonths(): Record<number, Record<number, PowerCurve>>;
 }
 export interface ConsumptionCurve {
     days?: DayCurve[];

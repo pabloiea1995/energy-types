@@ -2,7 +2,7 @@ import { PowerCurve } from "../../energy/classes/powerCurve.class";
 import { expect } from "chai";
 import { curve } from "./consumptionCurveMockup";
 import { periodDistributionMockup } from "./periodDistributionMockup";
-import { AbstractByPeriodValuesDto } from "../../energy/dtos/AbstractByPeriodValuesDto";
+import { Increasable } from "../../commons/increaseable";
 
 //statistics tests
 describe("Power curve statistics calculation", () => {
@@ -67,6 +67,7 @@ describe("Power curve statistics calculation", () => {
     expect(graph.x.length).to.be.equal(graph.y.length);
     expect(graph.xDailyAverage.length).to.be.equal(graph.yDailyAverage.length);
   });
+
   it("Generates graphs correctly with date X axis", () => {
     let graph = mockedPowerCurve.convertoToSerie();
 
@@ -100,6 +101,24 @@ describe("Power curve statistics calculation", () => {
     expect(graph).not.to.be.equal(null);
     expect(typeof graph.x[0]).to.be.equal("string");
   });
+  it("Filters by dates correctly", () => {
+    const startDate = new Date("2017-06-01");
+    const endDate = new Date("2017-06-03");
+    let filtered = new PowerCurve(
+      mockedPowerCurve.filterByDates(startDate, endDate),
+      false,
+      "",
+      false
+    );
+
+    expect(filtered).not.to.be.equal(null);
+
+    expect(filtered.days[0].date).to.be.equal("2017-06-01");
+    expect(filtered.days[filtered.days.length - 1].date).to.be.equal(
+      "2017-06-03"
+    );
+    expect(filtered.days.length).to.be.equal(3);
+  });
 
   it("Aggregates curves propertly", () => {
     let mockedPowerCurve = new PowerCurve(
@@ -123,6 +142,28 @@ describe("Power curve statistics calculation", () => {
       mockedPowerCurve.getTotalAcumulate() * 2
     );
   });
+  it("Aggregates curves propertly with negative values", () => {
+    let mockedPowerCurve = new PowerCurve(
+      curve.days,
+      true,
+      "test curve",
+      false
+    );
+    let mockedPowerCurveToAggregate = new PowerCurve(
+      curve.days,
+      true,
+      "test curve",
+      false
+    );
+
+    let aggregatedPowerCurve = mockedPowerCurve.aggregatePowerCurve(
+      mockedPowerCurveToAggregate.applyMultiplier(-1)
+    );
+
+    expect(aggregatedPowerCurve.getTotalAcumulate()).to.be.lessThan(
+      mockedPowerCurve.getTotalAcumulate()
+    );
+  });
 
   it("Applies multiplier curves propertly", () => {
     let mockedPowerCurve = new PowerCurve(
@@ -134,6 +175,45 @@ describe("Power curve statistics calculation", () => {
     expect(mockedPowerCurve.applyMultiplier(2).getTotalAcumulate()).to.be.equal(
       mockedPowerCurve.getTotalAcumulate() * 2
     );
+  });
+  it("Applies rotates correctly", () => {
+    let mockedPowerCurve = new PowerCurve(
+      curve.days,
+      true,
+      "test curve",
+      false
+    );
+    const rotatedMockedCurve = mockedPowerCurve.rotateCurve({
+      day: "01",
+      month: "03",
+    });
+    if (rotatedMockedCurve) {
+      expect(rotatedMockedCurve.days[0].date.split("-")[1]).to.be.equal("03") &&
+        expect(rotatedMockedCurve.days[0].date.split("-")[2]).to.be.equal("01");
+      expect(rotatedMockedCurve.days.length).to.be.equal(
+        mockedPowerCurve.days.length
+      );
+    }
+  });
+
+  it("Aligns curves propertly", () => {
+    let mockedPowerCurve = new PowerCurve(
+      curve.days,
+      true,
+      "test curve",
+      false
+    );
+    const rotatedMockedCurve = mockedPowerCurve.rotateCurve({
+      day: "01",
+      month: "03",
+    });
+
+    const alignedMockedCurve =
+      rotatedMockedCurve?.alignPowerCurveDates(mockedPowerCurve);
+    if (rotatedMockedCurve && alignedMockedCurve)
+      expect(mockedPowerCurve.days[0].date).to.be.equal(
+        alignedMockedCurve.days[0].date
+      );
   });
 
   it("Aggregates curve by period propertly", () => {
@@ -152,6 +232,34 @@ describe("Power curve statistics calculation", () => {
     );
     let totalPeriodAccumulate = periodValuesArray.reduce((a, b) => a + b, 0);
     expect(totalPeriodAccumulate).to.be.equal(
+      mockedPowerCurve.getTotalAcumulate()
+    );
+  });
+
+  it("Classify by years and months correctly", () => {
+    let mockedPowerCurve = new PowerCurve(
+      curve.days,
+      true,
+      "test curve",
+      false
+    );
+
+    const classifiedByYearsAndMonths =
+      mockedPowerCurve.classifyByYearsAndMonths();
+
+    expect(classifiedByYearsAndMonths).not.to.be.equal(undefined);
+
+    //aggregate all values and cehck it corresponds to original curva accumulated
+    let classifiedAccumulated = new Increasable();
+    for (let year in classifiedByYearsAndMonths) {
+      const currentYear = classifiedByYearsAndMonths[year];
+      for (let month in currentYear) {
+        const currentMonthCurve = currentYear[month];
+        classifiedAccumulated.increase(currentMonthCurve.getTotalAcumulate());
+      }
+    }
+
+    expect(classifiedAccumulated.get()).to.be.equal(
       mockedPowerCurve.getTotalAcumulate()
     );
   });

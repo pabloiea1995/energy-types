@@ -72,7 +72,6 @@ export function applyProfileToConsumption<
         const yearList = Object.keys(consumption).sort(
           (a, b) => parseInt(a) - parseInt(b)
         );
-        console.log(yearList);
         //preprocesamos los valores diarios de los perfilados, agregando por año y por mes
         //para generar un objeto de perfilados mensuales
         //precargamos el objeto
@@ -184,9 +183,8 @@ export function applyProfileToConsumption<
                         (profileByPeriod as any)[`p${hourPeriod}`]) *
                       (consumption as any)[`p${hourPeriod}`];
                   }
-                  resultProfileDay.valuesList![
-                    hour
-                  ] = hourCalculatedConsumption;
+                  resultProfileDay.valuesList![hour] =
+                    hourCalculatedConsumption;
                 }
               } else {
                 // console.log(
