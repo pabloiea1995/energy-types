@@ -747,7 +747,9 @@ export class PowerCurve {
             periodDistributionDay.valuesList
           ) {
             Object.keys(day.valuesList).forEach((hour) => {
-              let currentValue = day.valuesList![hour];
+              //undefined values of the curve must betreated as 0
+              let currentValue =
+                day.valuesList![hour] !== undefined ? day.valuesList![hour] : 0;
 
               let currentPeriod = ("p" +
                 periodDistributionDay.valuesList![
