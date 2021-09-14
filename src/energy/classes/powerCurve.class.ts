@@ -77,7 +77,7 @@ export class PowerCurve {
           }
         } else {
           //si no se ignoran los 0, solo se ignora el 0 en la hora 25
-          if (currentDay.valuesList[i.toString()] === 0 && i === 25) {
+          if (!currentDay.valuesList[i.toString()] && i === 25) {
           } else {
             y.push(currentDay.valuesList[i]);
             if (this.parseDate) {

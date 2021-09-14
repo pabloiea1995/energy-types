@@ -1,6 +1,6 @@
 {
   "name": "energy-types",
-  "version": "0.0.125",
+  "version": "0.0.126",
   "description": "Energy types and classes",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -14,7 +14,7 @@
   "scripts": {
     "build": "tsc",
     "prepare": "yarn build && yarn test",
-    "version": "npm run format && git add -A src",
+    "version": "git add -A src",
     "postversion": "git push && git push --tags",
     "test": "mocha -r ts-node/register src/tests/**/*.test.ts"
   },
