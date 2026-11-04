@@ -1,4 +1,5 @@
 import { AbstractByPeriodValuesDto } from "../dtos/AbstractByPeriodValuesDto";
+import { cloneValuesList, FirstByKey } from "./curveLookups";
 
 interface GraphSerie {
   name: string;
@@ -210,17 +211,24 @@ export class PowerCurve {
   aggregatePowerCurve(curveToAggregate: PowerCurve): PowerCurve {
     const curve = this.days;
     let resultCurve: DayCurve[] = [];
+    // Days of the other curve indexed by date on first use, instead of filtering
+    // the whole curve again for every hour
+    let daysToAggregate: FirstByKey<DayCurve> | undefined;
 
     resultCurve = curve.map((day) => {
       let resultDay: DayCurve = { date: day.date };
       let aggregatedValuesList: Record<string, number> =
-        JSON.parse(JSON.stringify(day.valuesList)) || {};
+        cloneValuesList(day.valuesList) || {};
       if (aggregatedValuesList && day.valuesList) {
         Object.keys(day.valuesList).forEach((hour) => {
           if (hour) {
-            const dayToAggregate = curveToAggregate.days.filter(
-              (dayToAggregate) => day.date === dayToAggregate.date
-            )[0];
+            if (!daysToAggregate) {
+              daysToAggregate = new FirstByKey(
+                curveToAggregate.days,
+                (dayToAggregate) => dayToAggregate.date
+              );
+            }
+            const dayToAggregate = daysToAggregate.get(day.date);
 
             if (dayToAggregate && dayToAggregate.valuesList) {
               aggregatedValuesList![hour] +=
@@ -286,6 +294,8 @@ export class PowerCurve {
     //curva de distribución horaria por periodo para cada año para la tarifa de acceso seleccionada en la curva
     let hourlyPeriodDistribution: Record<Year, Record<string, any>> &
       StatisticResult = {};
+    //period distribution days indexed by date on first use (it used to be filtered for every hour)
+    let periodDaysByDate: FirstByKey<DayCurve> | undefined;
 
     //una vez inicializados, iniciamos el analisis de la curva de carga
     //iteramos por cada objeto dia de la curva
@@ -324,9 +334,13 @@ export class PowerCurve {
               //si existe curva de periodos para esta curva, se acumula el consumo en su periodo correspondiente
               if (periodDistribution) {
                 //obtenemos la curva de distribución de periodos de la misma fecha
-                dayPeriodDistribution = periodDistribution.filter(
-                  (periodDay) => periodDay.date.split("T")[0] === date
-                )[0];
+                if (!periodDaysByDate) {
+                  periodDaysByDate = new FirstByKey(
+                    periodDistribution,
+                    (periodDay) => periodDay.date.split("T")[0]
+                  );
+                }
+                dayPeriodDistribution = periodDaysByDate.get(date);
                 //console.log(periodDistribution)
                 if (dayPeriodDistribution) {
                   //console.log(periodDistribution[date])
@@ -637,7 +651,7 @@ export class PowerCurve {
     resultCurve = curve.map((day) => {
       let resultDay: DayCurve = { date: day.date };
       let aggregatedValuesList: Record<string, number> =
-        JSON.parse(JSON.stringify(day.valuesList)) || {};
+        cloneValuesList(day.valuesList) || {};
       if (aggregatedValuesList && day.valuesList) {
         Object.keys(day.valuesList).forEach((hour) => {
           if (hour) {
@@ -666,7 +680,7 @@ export class PowerCurve {
     resultCurve = curve.map((day) => {
       let resultDay: DayCurve = { date: day.date };
       let aggregatedValuesList: Record<string, number> =
-        JSON.parse(JSON.stringify(day.valuesList)) || {};
+        cloneValuesList(day.valuesList) || {};
       if (aggregatedValuesList && day.valuesList) {
         Object.keys(day.valuesList).forEach((hour) => {
           if (hour) {
@@ -697,7 +711,7 @@ export class PowerCurve {
     resultCurve = curve.map((day) => {
       let resultDay: DayCurve = { date: day.date };
       let aggregatedValuesList: Record<string, number> =
-        JSON.parse(JSON.stringify(day.valuesList)) || {};
+        cloneValuesList(day.valuesList) || {};
       if (aggregatedValuesList && day.valuesList) {
         Object.keys(day.valuesList).forEach((hour) => {
           if (hour) {
@@ -726,19 +740,30 @@ export class PowerCurve {
     try {
       if (periodDistribution[0].date) {
         let periodDistributionDay: DayCurve;
+        //period distribution days indexed by date on first use (it used to be filtered for every day)
+        let periodDaysByDate: FirstByKey<DayCurve> | undefined;
+        let periodDaysByFullDate: FirstByKey<DayCurve> | undefined;
         //iterate throw power curve days
         this.days.forEach((day) => {
           //distintion between "T" format date and normal date
           if (periodDistribution[0].date.split("T").length > 0) {
             //get the period distribution day
-            periodDistributionDay = periodDistribution.filter(
-              (periodDay) => periodDay.date.split("T")[0] === day.date
-            )[0];
+            if (!periodDaysByDate) {
+              periodDaysByDate = new FirstByKey(
+                periodDistribution,
+                (periodDay) => periodDay.date.split("T")[0]
+              );
+            }
+            periodDistributionDay = periodDaysByDate.get(day.date)!;
           } else {
             //get the period distribution day
-            periodDistributionDay = periodDistribution.filter(
-              (periodDay) => periodDay.date === day.date
-            )[0];
+            if (!periodDaysByFullDate) {
+              periodDaysByFullDate = new FirstByKey(
+                periodDistribution,
+                (periodDay) => periodDay.date
+              );
+            }
+            periodDistributionDay = periodDaysByFullDate.get(day.date)!;
           }
 
           if (
@@ -839,16 +864,41 @@ export class PowerCurve {
     const referenceDays = reference.days;
     //  const toAdaptDays = curveToAdapt.days;
 
+    // Days grouped by month and day on the first reference day, instead of reading the
+    // whole curve for every reference day. A day is moved to another group if its new
+    // date no longer splits into the same month and day.
+    let daysByMonthDay: Map<string, DayCurve[]> | undefined;
+    const monthDayKey = (date: string) => {
+      const [, month, day] = date.split("-");
+      return JSON.stringify([month, day]);
+    };
+    const addToGroup = (key: string, day: DayCurve) => {
+      const group = daysByMonthDay!.get(key);
+      if (group) group.push(day);
+      else daysByMonthDay!.set(key, [day]);
+    };
+
     for (let referenceDay of referenceDays) {
       const referenceDate = referenceDay.date;
       const [r_year, r_month, r_day] = referenceDate.split("-");
 
-      alignedPowerCurve.days.find((d) => {
+      if (!daysByMonthDay) {
+        daysByMonthDay = new Map();
+        for (const d of alignedPowerCurve.days) addToGroup(monthDayKey(d.date), d);
+      }
+      const key = JSON.stringify([r_month, r_day]);
+      const group = daysByMonthDay.get(key);
+      if (!group) continue;
+      const stillInGroup: DayCurve[] = [];
+      for (const d of group) {
         const [year, month, day] = d.date.split("-");
-        if (month === r_month && day === r_day) {
-          d.date = `${r_year}-${month}-${day}`;
-        }
-      });
+        d.date = `${r_year}-${month}-${day}`;
+        const newKey = monthDayKey(d.date);
+        if (newKey === key) stillInGroup.push(d);
+        else addToGroup(newKey, d);
+      }
+      if (stillInGroup.length) daysByMonthDay.set(key, stillInGroup);
+      else daysByMonthDay.delete(key);
     }
     return alignedPowerCurve;
   }

@@ -1,0 +1,4 @@
+/node_modules
+# Tests and their fixtures are not part of the package (nothing imports them)
+/src/tests
+/lib/tests

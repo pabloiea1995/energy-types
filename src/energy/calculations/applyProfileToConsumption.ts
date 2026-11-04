@@ -1,6 +1,7 @@
 import { DayCurve } from "..";
 import { PowerCurve } from "../classes/powerCurve.class";
 import { AbstractByPeriodValuesDto } from "../dtos/AbstractByPeriodValuesDto";
+import { FirstByKeyInOrder } from "../classes/curveLookups";
 
 export enum ConsumptionIntroductionModes {
   TOTAL_CONSUMPTION = "totalConsumption",
@@ -155,6 +156,11 @@ export function applyProfileToConsumption<
         //first, aggregate the profile by period
         const profileCurve = new PowerCurve(profile, false, "profile", true);
         const profileByPeriod = profileCurve.aggregateByPeriod(periodsCurve);
+        //period days by month and day, read in order as far as needed (it used to be a find for every day)
+        const periodDaysByMonthDay = new FirstByKeyInOrder(periodsCurve, (day1) => {
+          const [year1, month1, day_1] = day1.date.split("T")[0].split("-");
+          return JSON.stringify([month1, day_1]);
+        });
 
         //second iterate through the profile curve calculating each consumption hour value
         //as the product of itds period consumption value and the profile hour value divided by the aggregatted value of that period
@@ -163,10 +169,9 @@ export function applyProfileToConsumption<
           const [year, month, day_] = day.date.split("-");
           if (day.valuesList) {
             //get the period of the day
-            const dayPeriod = periodsCurve.find((day1) => {
-              const [year1, month1, day_1] = day1.date.split("T")[0].split("-");
-              return month === month1 && day_ === day_1;
-            });
+            const dayPeriod = periodDaysByMonthDay.get(
+              JSON.stringify([month, day_])
+            );
             if (!dayPeriod) {
               return;
             }
